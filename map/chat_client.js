@@ -1,5 +1,5 @@
 // WebSocketサーバに接続
-var ws = new WebSocket('ws://192.168.0.7:8888');
+var ws = new WebSocket('ws://160.16.200.21:8888');
 var data = new Array();
  
 // エラー処理
