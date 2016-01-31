@@ -1,7 +1,7 @@
 // WebSocketサーバに接続
 var ws = new WebSocket('ws://160.16.200.21:8888');
 var data = new Array();
- 
+
 // エラー処理
 ws.onerror = function(e){
   $('#chat-area').empty()
@@ -10,17 +10,35 @@ ws.onerror = function(e){
       'サーバに接続できませんでした。'
     );
 };
- 
+
+// ユーザ名をランダムに生成
+var userName = '';
+ // = 'ゲスト' + Math.floor(Math.random() * 100);
+// チャットボックスの前にユーザ名を表示
+// $('#user-name').append(userName);
+
 // WebSocketサーバ接続イベント
 ws.onopen = function() {
-  $('#textbox').focus();
   // 入室情報を文字列に変換して送信
   ws.send(JSON.stringify({
     type: 'join',
-    user: location.hostname
+    user: userName
   }));
 };
- 
+
+// 発言イベント
+textbox.onkeydown = function(event) {
+  // エンターキーを押したとき
+  if (event.keyCode === 13 && textbox.value.length > 0) {
+    ws.send(JSON.stringify({
+      type: 'chat',
+      user: userName,
+      text: textbox.value
+    }));
+    textbox.value = '';
+  }
+};
+
 // メッセージ受信イベントを処理
 ws.onmessage = function(event) {
   // 受信したメッセージを復元
@@ -30,13 +48,17 @@ ws.onmessage = function(event) {
       $('<i/>').addClass('icon-user'),
       $('<small/>').addClass('meta chat-time').append(' ' + data.time))
   );
- 
+
   // pushされたメッセージを解釈し、要素を生成する
   if (data.type === 'join') {
-    item.addClass('alert alert-info')
-    .children('div').children('i').after(data.user + 'の追跡開始');
+    // item.addClass('alert alert-info')
+    // .children('div').children('i').after(data.user + 'の追跡開始');
+  } else if (data.type === 'chat') {
+    item.addClass('well well-small')
+    .children('div').children('i').after(data.text + 'の追跡開始');
     // 現在位置を取得する
-    navigator.geolocation.getCurrentPosition( successFunc , errorFunc , optionObj );
+    userName = data.text;
+    navigator.geolocation.getCurrentPosition(successFunc, errorFunc, optionObj);
   } else if (data.type === 'defect') {
     item.addClass('alert')
     .children('div').children('i').after(data.user + 'の追跡終了');
@@ -80,14 +102,14 @@ function makeMap(mapCoordinateX, mapCoordinateY, userName) {
 }
 
 // 位置情報取得を成功した時の関数
-function successFunc( position )
+function successFunc(position)
 {
   // var googleMap = $('[data-google-map]');
   var mapCoordinateX = position.coords.latitude;
   var mapCoordinateY = position.coords.longitude;
   // var mapUrl = 'https://www.google.com/maps/embed/v1/place?key=AIzaSyCefs07HExKigFfi5VfNNvJTkna5Vzerjw&q=' + mapCoordinateX + ',' + mapCoordinateY + '&zoom=15';
   // googleMap.attr('src', mapUrl);
-  makeMap(mapCoordinateX, mapCoordinateY, location.hostname);
+  makeMap(mapCoordinateX, mapCoordinateY, userName);
 }
 
 // 位置情報取得を失敗した時の関数
@@ -111,7 +133,7 @@ var optionObj = {
   "timeout": 10000 ,
   "maximumAge": 5000 ,
 } ;
- 
+
 // ブラウザ終了イベント
 window.onbeforeunload = function () {
   ws.send(JSON.stringify({
